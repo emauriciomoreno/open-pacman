@@ -53,25 +53,27 @@ function aligned( v ) {
 
 // Una celda es muro para el actor dado?
 //   pacman: bloqueado por pared (1) y puerta (3)
-//   ghost:  bloqueado solo por pared (1)
-function isWall( grid, x, y, actor ) {
+//   ghost:  bloqueado por pared (1) y por la puerta (3) salvo que este
+//           saliendo del corral (exiting)
+function isWall( grid, x, y, actor, exiting ) {
   if ( y < 0 || y >= grid.length ) return true;
   if ( x < 0 || x >= grid[ 0 ].length ) return true;
   const v = grid[ y ][ x ];
   if ( v === 1 ) return true;
-  if ( v === 3 && actor === 'pacman' ) return true;
+  if ( v === 3 && !( actor === 'ghost' && exiting ) ) return true;
   return false;
 }
 
 // Puede el actor avanzar desde (x,y) en la direccion dir?
-function canMove( grid, x, y, dir, actor ) {
+// exiting (fantasmas): solo con true pueden cruzar la puerta del corral.
+function canMove( grid, x, y, dir, actor, exiting ) {
   const d = DIRS[ dir ];
   if ( !d ) return false;
   const tx = x + d.x;
   const ty = y + d.y;
   // Tunel: salir por un borde en la fila del tunel siempre es valido.
   if ( ty === TUNNEL_ROW && ( tx < 0 || tx >= grid[ 0 ].length ) ) return true;
-  return !isWall( grid, tx, ty, actor );
+  return !isWall( grid, tx, ty, actor, exiting );
 }
 
 function wrapTunnel( a, width ) {
@@ -153,7 +155,8 @@ function decideGhost( game, g ) {
   const target = targetForKind( game, g );
 
   const options = Object.keys( DIRS ).filter(
-    ( dir ) => dir !== OPPOSITE[ g.dir ] && canMove( grid, g.x, g.y, dir, 'ghost' )
+    ( dir ) =>
+      dir !== OPPOSITE[ g.dir ] && canMove( grid, g.x, g.y, dir, 'ghost', g.exiting )
   );
   // Sin salida (callejon): permitir el giro de 180.
   const choices = options.length ? options : [ '' + OPPOSITE[ g.dir ] ];
@@ -200,7 +203,7 @@ function moveGhost( game, g ) {
     }
     if ( !g.exiting ) decideGhost( game, g );
 
-    if ( !canMove( grid, g.x, g.y, g.dir, 'ghost' ) ) return;
+    if ( !canMove( grid, g.x, g.y, g.dir, 'ghost', g.exiting ) ) return;
   }
 
   const d = DIRS[ g.dir ];
