@@ -134,7 +134,16 @@ function targetForKind( game, g ) {
     return { x: 2 * ax - Math.round( b.x ), y: 2 * ay - Math.round( b.y ) };
   }
 
-  // blinky, clyde: por ahora persiguen directo la celda de Pac-Man.
+  if ( g.kind === 'clyde' ) {
+    // Timido: persigue a mas de 8 de distancia Manhattan;
+    // a 8 o menos, huye a su esquina inferior-izquierda.
+    const dist =
+      Math.abs( Math.round( g.x ) - px ) + Math.abs( Math.round( g.y ) - py );
+    if ( dist > 8 ) return { x: px, y: py };
+    return { x: 1, y: 29 };
+  }
+
+  // blinky: persigue directo la celda de Pac-Man.
   return { x: px, y: py };
 }
 
