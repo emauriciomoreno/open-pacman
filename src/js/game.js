@@ -123,7 +123,18 @@ function targetForKind( game, g ) {
     return { x: px + 4 * d.x, y: py + 4 * d.y };
   }
 
-  // blinky, inky, clyde: por ahora persiguen directo la celda de Pac-Man.
+  if ( g.kind === 'inky' ) {
+    // Flanquea: 2·(Pac-Man + 2·mirada) − celda de blinky.
+    // Fallback sin blinky: la celda de Pac-Man.
+    const b = game.ghosts.find( ( gh ) => gh.kind === 'blinky' );
+    if ( !b ) return { x: px, y: py };
+    const d = DIRS[ p.dir ];
+    const ax = px + 2 * d.x;
+    const ay = py + 2 * d.y;
+    return { x: 2 * ax - Math.round( b.x ), y: 2 * ay - Math.round( b.y ) };
+  }
+
+  // blinky, clyde: por ahora persiguen directo la celda de Pac-Man.
   return { x: px, y: py };
 }
 
