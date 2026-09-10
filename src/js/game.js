@@ -12,6 +12,8 @@ const OPPOSITE = { left: 'right', right: 'left', up: 'down', down: 'up' };
 
 const PACMAN_SPEED = 0.125; // 1/8 celda/frame -> alinea cada 8 frames
 const GHOST_SPEED = 0.1;    // 1/10 celda/frame
+const FRIGHTENED_FRAMES = 480; // 8 s a 60 fps
+const FRIGHTENED_SPEED = 0.05; // mitad de GHOST_SPEED
 
 // Crea una partida nueva. Copia MAZE (pristino) a game.grid para poder comer
 // dots sin destruir el original, y reiniciar.
@@ -28,6 +30,8 @@ function createGame() {
     score: 0,
     lives: 3,
     dotsRemaining: dots,
+    frightenedTimer: 0, // frames restantes del efecto; 0 = inactivo
+    ghostEatChain: 0,   // fantasmas comidos con el pellet activo
     grid,
     pacman: {
       x: PACMAN_START.x,
@@ -43,6 +47,7 @@ function createGame() {
       speed: GHOST_SPEED,
       kind: g.kind,
       exiting: !!g.inPen,
+      frightened: false, // true mientras dura el efecto
     } ) ),
   };
 }
@@ -107,6 +112,15 @@ function movePacman( game ) {
       grid[ p.y ][ p.x ] = 0;
       game.score += 50;
       game.dotsRemaining--;
+      // Power pellet: asusta a todos y reinicia timer y cadena.
+      game.frightenedTimer = FRIGHTENED_FRAMES;
+      game.ghostEatChain = 0;
+      game.ghosts.forEach( ( g ) => {
+        g.frightened = true;
+        // Reversa de marcha como aviso; los que salen del corral
+        // mantienen su ruta fija.
+        if ( !g.exiting ) g.dir = OPPOSITE[ g.dir ];
+      } );
     }
     // Si no puede seguir, se detiene en la celda.
     if ( !canMove( grid, p.x, p.y, p.dir, 'pacman' ) ) return;
@@ -157,7 +171,6 @@ function targetForKind( game, g ) {
 
 function decideGhost( game, g ) {
   const grid = game.grid;
-  const target = targetForKind( game, g );
 
   const options = Object.keys( DIRS ).filter(
     ( dir ) =>
@@ -165,6 +178,14 @@ function decideGhost( game, g ) {
   );
   // Sin salida (callejon): permitir el giro de 180.
   const choices = options.length ? options : [ '' + OPPOSITE[ g.dir ] ];
+
+  // Asustado: bifurca al azar entre las direcciones validas sin reversa.
+  if ( g.frightened ) {
+    g.dir = choices[ Math.floor( Math.random() * choices.length ) ];
+    return;
+  }
+
+  const target = targetForKind( game, g );
 
   // Direccion valida sin reversa que minimiza distancia Manhattan al objetivo.
   let best = choices[ 0 ];
@@ -212,8 +233,10 @@ function moveGhost( game, g ) {
   }
 
   const d = DIRS[ g.dir ];
-  g.x += d.x * g.speed;
-  g.y += d.y * g.speed;
+  // Asustado (y no saliendo del corral): mitad de velocidad.
+  const speed = g.frightened && !g.exiting ? FRIGHTENED_SPEED : g.speed;
+  g.x += d.x * speed;
+  g.y += d.y * speed;
   wrapTunnel( g, width );
 }
 
@@ -236,6 +259,16 @@ function collides( a, b ) {
 }
 
 function update( game ) {
+  // Cuenta atras del frightened; al llegar a 0 el efecto termina para todos.
+  if ( game.frightenedTimer > 0 ) {
+    game.frightenedTimer--;
+    if ( game.frightenedTimer === 0 ) {
+      game.ghosts.forEach( ( g ) => {
+        g.frightened = false;
+      } );
+    }
+  }
+
   movePacman( game );
   game.ghosts.forEach( ( g ) => moveGhost( game, g ) );
 
