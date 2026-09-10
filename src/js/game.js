@@ -14,6 +14,7 @@ const PACMAN_SPEED = 0.125; // 1/8 celda/frame -> alinea cada 8 frames
 const GHOST_SPEED = 0.1;    // 1/10 celda/frame
 const FRIGHTENED_FRAMES = 480; // 8 s a 60 fps
 const FRIGHTENED_SPEED = 0.05; // mitad de GHOST_SPEED
+const GHOST_SCORES = [ 200, 400, 800, 1600 ];
 
 // Crea una partida nueva. Copia MAZE (pristino) a game.grid para poder comer
 // dots sin destruir el original, y reiniciar.
@@ -246,11 +247,15 @@ function resetPositions( game ) {
   p.y = PACMAN_START.y;
   p.dir = 'left';
   p.nextDir = null;
+  // Vida perdida: el efecto frightened se cancela por completo.
+  game.frightenedTimer = 0;
+  game.ghostEatChain = 0;
   game.ghosts.forEach( ( g, i ) => {
     g.x = GHOST_STARTS[ i ].x;
     g.y = GHOST_STARTS[ i ].y;
     g.dir = 'up';
     g.exiting = !!GHOST_STARTS[ i ].inPen;
+    g.frightened = false;
   } );
 }
 
@@ -272,8 +277,21 @@ function update( game ) {
   movePacman( game );
   game.ghosts.forEach( ( g ) => moveGhost( game, g ) );
 
-  for ( const g of game.ghosts ) {
-    if ( collides( game.pacman, g ) ) {
+  for ( let i = 0; i < game.ghosts.length; i++ ) {
+    const g = game.ghosts[ i ];
+    if ( !collides( game.pacman, g ) ) continue;
+
+    if ( g.frightened ) {
+      // Fantasma comido: puntos de cadena y teletransporte a su celda
+      // de GHOST_STARTS para re-salir por la puerta.
+      game.score += GHOST_SCORES[ Math.min( game.ghostEatChain, 3 ) ];
+      game.ghostEatChain++;
+      g.x = GHOST_STARTS[ i ].x;
+      g.y = GHOST_STARTS[ i ].y;
+      g.dir = 'up';
+      g.exiting = true;
+      g.frightened = false;
+    } else {
       game.lives--;
       if ( game.lives <= 0 ) {
         game.state = 'lost';
