@@ -114,8 +114,17 @@ function movePacman( game ) {
 // distancias; puede caer fuera del laberinto.
 function targetForKind( game, g ) {
   const p = game.pacman;
-  // Por ahora los 4 kinds persiguen directo la celda de Pac-Man.
-  return { x: Math.round( p.x ), y: Math.round( p.y ) };
+  const px = Math.round( p.x );
+  const py = Math.round( p.y );
+
+  if ( g.kind === 'pinky' ) {
+    // Embosca: 4 celdas delante de la mirada de Pac-Man (up sin desvio).
+    const d = DIRS[ p.dir ];
+    return { x: px + 4 * d.x, y: py + 4 * d.y };
+  }
+
+  // blinky, inky, clyde: por ahora persiguen directo la celda de Pac-Man.
+  return { x: px, y: py };
 }
 
 function decideGhost( game, g ) {
