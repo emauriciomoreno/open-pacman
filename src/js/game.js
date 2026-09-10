@@ -1,6 +1,6 @@
 // game.js
 // Estado y reglas. Depende de globals de maze.js: MAZE, TUNNEL_ROW,
-// PACMAN_START, GHOST_STARTS.
+// PACMAN_START, GHOST_STARTS, GATE_EXIT.
 
 const DIRS = {
   left: { x: -1, y: 0 },
@@ -174,6 +174,15 @@ function decideGhost( game, g ) {
   g.dir = best;
 }
 
+// Direccion de la ruta fija de salida del corral: alinear a la columna
+// de GATE_EXIT y subir por la puerta.
+function exitDir( g ) {
+  const col = Math.round( g.x );
+  if ( col < GATE_EXIT.x ) return 'right';
+  if ( col > GATE_EXIT.x ) return 'left';
+  return 'up';
+}
+
 function moveGhost( game, g ) {
   const grid = game.grid;
   const width = grid[ 0 ].length;
@@ -181,7 +190,16 @@ function moveGhost( game, g ) {
   if ( aligned( g.x ) && aligned( g.y ) ) {
     g.x = Math.round( g.x );
     g.y = Math.round( g.y );
-    decideGhost( game, g );
+
+    // Salida del corral: ruta fija, sin decideGhost mientras exiting.
+    // Al llegar a GATE_EXIT se retoma la IA; con dir 'up' decideGhost
+    // ya excluye la reversa 'down', justo la puerta.
+    if ( g.exiting ) {
+      if ( g.x === GATE_EXIT.x && g.y === GATE_EXIT.y ) g.exiting = false;
+      else g.dir = exitDir( g );
+    }
+    if ( !g.exiting ) decideGhost( game, g );
+
     if ( !canMove( grid, g.x, g.y, g.dir, 'ghost' ) ) return;
   }
 
