@@ -53,12 +53,15 @@ const TUNNEL_ROW = 14;
 const PACMAN_START = { x: 13, y: 23 };
 const GHOST_STARTS = [
   { x: 13, y: 11, kind: 'blinky' }, // fuera del corral, sobre la puerta
-  { x: 13, y: 14, kind: 'pinky' }, // dentro del corral, bajo la puerta
-  { x: 11, y: 14, kind: 'inky' }, // dentro del corral, izquierda
-  { x: 16, y: 14, kind: 'clyde' }, // dentro del corral, derecha
+  { x: 13, y: 14, kind: 'pinky', inPen: true }, // dentro del corral, bajo la puerta
+  { x: 11, y: 14, kind: 'inky', inPen: true }, // dentro del corral, izquierda
+  { x: 16, y: 14, kind: 'clyde', inPen: true }, // dentro del corral, derecha
 ];
+// Celda sobre la puerta donde termina la salida del corral.
+const GATE_EXIT = { x: 13, y: 11 };
 
 window.MAZE = MAZE;
 window.TUNNEL_ROW = TUNNEL_ROW;
 window.PACMAN_START = PACMAN_START;
 window.GHOST_STARTS = GHOST_STARTS;
+window.GATE_EXIT = GATE_EXIT;
